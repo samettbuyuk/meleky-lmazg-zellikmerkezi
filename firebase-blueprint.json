@@ -1,0 +1,49 @@
+{
+  "entities": {
+    "Appointment": {
+      "title": "Appointment",
+      "description": "A customer appointment for beauty services.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Customer name" },
+        "email": { "type": "string", "format": "email", "description": "Customer email address" },
+        "phone": { "type": "string", "description": "Customer phone number" },
+        "date": { "type": "string", "description": "Appointment date (YYYY-MM-DD)" },
+        "time": { "type": "string", "description": "Appointment time (HH:mm)" },
+        "service": { "type": "string", "description": "Requested service name" },
+        "status": { 
+          "type": "string", 
+          "enum": ["pending", "confirmed", "cancelled"],
+          "description": "Current status of the appointment"
+        },
+        "cancellationReason": { "type": "string", "description": "Reason for cancellation if applicable" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Creation timestamp" }
+      },
+      "required": ["name", "email", "phone", "date", "time", "service", "status", "createdAt"]
+    }
+  },
+  "firestore": {
+    "appointments/{appointmentId}": {
+      "schema": "Appointment",
+      "description": "Private collection of all appointment requests with PII. Admin only."
+    },
+    "slots/{slotId}": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "taken": { "type": "boolean" }
+        }
+      },
+      "description": "Public availability indicators."
+    },
+    "admins/{userId}": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "email": { "type": "string" }
+        }
+      },
+      "description": "List of authorized administrators."
+    }
+  }
+}

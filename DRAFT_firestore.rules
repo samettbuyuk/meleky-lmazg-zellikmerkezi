@@ -1,0 +1,71 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Default Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidAppointment(data) {
+      return data.keys().hasAll(['name', 'phone', 'date', 'time', 'service', 'status', 'createdAt'])
+        && data.keys().size() == 7
+        && data.name is string && data.name.size() > 0 && data.name.size() <= 100
+        && data.phone is string && data.phone.size() >= 10 && data.phone.size() <= 20
+        && data.date is string && data.date.matches('^\\d{4}-\\d{2}-\\d{2}$')
+        && data.time is string && data.time.matches('^\\d{2}:\\d{2}$')
+        && data.service is string && data.service.size() > 0
+        && data.status in ['pending', 'confirmed', 'cancelled']
+        && data.createdAt == request.time;
+    }
+
+    match /appointments/{appointmentId} {
+      allow create: if isValidId(appointmentId) 
+        && isValidAppointment(incoming())
+        && incoming().status == 'pending'
+        && !exists(/databases/$(database)/documents/appointments/$(appointmentId));
+
+      allow get: if isAdmin();
+      allow list: if isAdmin();
+
+      allow update: if isAdmin()
+        && isValidAppointment(incoming())
+        && (
+          // Only status and name/phone/service can be updated by admin
+          incoming().diff(existing()).affectedKeys().hasAny(['status', 'name', 'phone', 'service'])
+          // Date and time are immutable once created to preserve the slot integrity
+          && incoming().date == existing().date
+          && incoming().time == existing().time
+          && incoming().createdAt == existing().createdAt
+        );
+
+      allow delete: if isAdmin();
+    }
+
+    match /admins/{userId} {
+      allow read: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      // Admin creation is manual or handled by another admin
+      allow write: if isAdmin();
+    }
+  }
+}

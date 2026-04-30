@@ -1,0 +1,6 @@
+{
+  "name": "Melek Yılmaz Güzellik Merkezi",
+  "description": "Trabzon'da profesyonel ve sıcak atmosferiyle hizmet veren modern güzellik merkezi. Cilt bakımı, kaş tasarımı ve profesyonel güzellik çözümleri.",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": []
+}
